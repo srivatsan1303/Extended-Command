@@ -1,27 +1,36 @@
+import pkgutil
+import importlib
 from app.commands import CommandHandler
-from app.commands.exit import ExitCommand
-from app.commands.goodbye import GoodbyeCommand
-from app.commands.greet import GreetCommand
-from app.commands.thankyou import ThankYouCommand
-from app.commands.welcome import WelcomeCommand
+from app.commands import Command
+from app.plugin.menu import MenuCommand
 
 class App:
     def __init__(self): # Constructor
         self.command_handler = CommandHandler()
-        # Register commands here
+        menu_instance = MenuCommand(self.command_handler)
 
+    def load_plugins(self):
+        # Dynamically load all plugins in the plugins directory
+        plugins_package = 'app.plugin'
+        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_package.replace('.', '/')]):
+            if is_pkg:  # Ensure it's a package
+                plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
+                for item_name in dir(plugin_module):
+                    item = getattr(plugin_module, item_name)
+                    try:
+                        if issubclass(item, (Command)):  # Assuming a BaseCommand class exists
+                            if plugin_name == 'menu':
+                                menu_instance = MenuCommand(self.command_handler)
+                                self.command_handler.register_command(plugin_name, menu_instance)
+                            else:
+                                self.command_handler.register_command(plugin_name, item())
+                    except TypeError:
+                        continue  # If item is not a class or unrelated class, just ignore
 
     def start(self):
-        self.command_handler.register_command("greet", GreetCommand())
-        self.command_handler.register_command("goodbye", GoodbyeCommand())
-        self.command_handler.register_command("exit", ExitCommand())
-        self.command_handler.register_command("welcome", WelcomeCommand())
-        self.command_handler.register_command("thankyou", ThankYouCommand())
-
-
-        print("Type 'exit' to exit.")
-        while True:  #REPL Read, Evaluate, Process, Loop
+        # Register commands here
+        self.load_plugins()
+        print("Type 'menu' to go to menu and  'exit' to quit.")
+        while True:  #REPL Read, Evaluate, Print, Loop
             self.command_handler.execute_command(input(">>> ").strip())
-
-
-
+ 
