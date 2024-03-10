@@ -33,7 +33,7 @@ class App:
         return self.settings.get(env_var, None)
 
     def load_plugins(self):
-        plugins_package = 'app.plugins'
+        plugins_package = 'app.plugin'
         plugins_path = plugins_package.replace('.', '/')
         if not os.path.exists(plugins_path):
             logging.warning(f"Plugins directory '{plugins_path}' not found.")
